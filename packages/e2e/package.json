@@ -1,0 +1,13 @@
+{
+  "name": "@pinmark/e2e",
+  "private": true,
+  "version": "0.1.0",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node tests/extension.test.cjs",
+    "test:ci": "node tests/extension.test.cjs --ci"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^24.1.1"
+  }
+}

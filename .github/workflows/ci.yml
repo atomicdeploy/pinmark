@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    name: Test & Build Extension
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        # --ignore-scripts skips native addon compilation for packages/cli and
+        # packages/backend that depend on better-sqlite3; those packages are not
+        # required for the extension build or tests.
+        run: pnpm install --ignore-scripts
+
+      - name: Prepare WXT type stubs
+        # wxt prepare generates .wxt/ with auto-import types (defineBackground,
+        # defineContentScript, etc.) that tsc needs to type-check the extension.
+        run: pnpm --filter @pinmark/extension exec wxt prepare
+
+      - name: Type-check extension
+        run: pnpm --filter @pinmark/extension exec tsc --noEmit
+
+      - name: Run unit tests
+        run: pnpm --filter @pinmark/extension test
+
+      - name: Build extension (Chrome MV3)
+        run: pnpm --filter @pinmark/extension build
+
+      - name: Build extension (Firefox MV3)
+        run: pnpm --filter @pinmark/extension exec wxt build --browser firefox
+
+      - name: Install Chromium for E2E tests
+        # Install the full Chromium (not headless-shell) required for extension loading.
+        # --headless=new in Chrome 112+ supports MV3 extensions without GPU/Xvfb.
+        run: npx playwright install chromium
+
+      - name: Run E2E tests (real Pinterest & Pixiv)
+        # puppeteer-core connects to Chromium with --headless=new + --load-extension.
+        # CHROME_PATH is set to the Playwright-managed full Chromium binary.
+        run: |
+          CHROME=$(find "$HOME/.cache/ms-playwright" -name "chrome" -not -path "*headless*" -type f 2>/dev/null | head -1)
+          echo "Using Chrome: $CHROME"
+          CHROME_PATH="$CHROME" pnpm --filter @pinmark/e2e test:ci
+        env:
+          EXT_PATH: ${{ github.workspace }}/packages/extension/.output/chrome-mv3
+
+      - name: Upload E2E screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots-${{ github.sha }}
+          path: packages/e2e/screenshots/
+          retention-days: 14
+
+      - name: Upload Chrome build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pinmark-chrome-mv3-${{ github.sha }}
+          path: packages/extension/.output/chrome-mv3/
+          retention-days: 14
+
+      - name: Upload Firefox build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pinmark-firefox-mv3-${{ github.sha }}
+          path: packages/extension/.output/firefox-mv3/
+          retention-days: 14
