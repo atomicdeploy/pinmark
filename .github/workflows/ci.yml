@@ -36,6 +36,11 @@ jobs:
         # required for the extension build or tests.
         run: pnpm install --ignore-scripts
 
+      - name: Prepare WXT type stubs
+        # wxt prepare generates .wxt/ with auto-import types (defineBackground,
+        # defineContentScript, etc.) that tsc needs to type-check the extension.
+        run: pnpm --filter @pinmark/extension exec wxt prepare
+
       - name: Type-check extension
         run: pnpm --filter @pinmark/extension exec tsc --noEmit
 

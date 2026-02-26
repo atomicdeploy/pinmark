@@ -1,6 +1,7 @@
 /**
- * Cross-tab event bus using chrome.storage.onChanged + BroadcastChannel.
+ * Cross-tab event bus using browser.storage.onChanged + BroadcastChannel.
  * Zero-polling, bidirectional sync across all open tabs and the admin panel.
+ * Uses the WXT-provided `browser` global (webextension-polyfill).
  */
 import type { BusMessage, EventType } from './types';
 
@@ -10,7 +11,7 @@ const STORAGE_KEY = 'pinmark-event-bus';
 type Listener<T = unknown> = (message: BusMessage<T>) => void;
 
 /**
- * EventBus wraps BroadcastChannel (primary) and chrome.storage.onChanged
+ * EventBus wraps BroadcastChannel (primary) and browser.storage.onChanged
  * (secondary, for cross-context like service workers) to deliver events
  * to all open extension contexts without polling.
  */
@@ -24,14 +25,16 @@ export class EventBus {
       this.dispatch(e.data);
     };
 
-    // Also listen on chrome.storage for service-worker contexts
-    if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
-      chrome.storage.onChanged.addListener((changes, area) => {
+    // Also listen on browser.storage for service-worker contexts
+    try {
+      browser.storage.onChanged.addListener((changes, area) => {
         if (area === 'local' && changes[STORAGE_KEY]) {
           const msg = changes[STORAGE_KEY].newValue as BusMessage | undefined;
           if (msg) this.dispatch(msg);
         }
       });
+    } catch {
+      // browser API may not be available in all contexts (e.g. unit tests)
     }
   }
 
@@ -39,9 +42,11 @@ export class EventBus {
   publish<T>(type: EventType, payload: T): void {
     const message: BusMessage<T> = { type, payload, timestamp: Date.now() };
     this.channel.postMessage(message);
-    // Also write to chrome.storage for background worker
-    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-      chrome.storage.local.set({ [STORAGE_KEY]: message });
+    // Also write to browser.storage for the background worker
+    try {
+      browser.storage.local.set({ [STORAGE_KEY]: message });
+    } catch {
+      // browser API may not be available in all contexts (e.g. unit tests)
     }
   }
 

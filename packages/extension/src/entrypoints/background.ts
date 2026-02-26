@@ -1,42 +1,45 @@
 /**
  * Background service worker for Pinmark.
  * Handles extension lifecycle, message routing, and optional backend sync.
+ * Uses the WXT-provided `browser` global (webextension-polyfill) for
+ * cross-browser compatibility.
  */
 export default defineBackground(() => {
-  // Keep service worker alive by responding to messages
-  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  // Respond to messages from content scripts and popup
+  browser.runtime.onMessage.addListener((message, _sender) => {
     if (message?.type === 'ping') {
-      sendResponse({ type: 'pong' });
+      return Promise.resolve({ type: 'pong' });
     }
     if (message?.type === 'get-tab-url') {
-      chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-        sendResponse({ url: tabs[0]?.url ?? null });
-      });
-      return true; // async
+      return browser.tabs
+        .query({ active: true, currentWindow: true })
+        .then(tabs => ({ url: tabs[0]?.url ?? null }));
     }
-    return false;
+    return undefined;
   });
 
   // On install/update
-  chrome.runtime.onInstalled.addListener(details => {
+  browser.runtime.onInstalled.addListener(details => {
     if (details.reason === 'install') {
       // Open options page on first install
-      chrome.runtime.openOptionsPage?.();
+      browser.runtime.openOptionsPage?.();
     }
   });
 
   // Relay storage events to all tabs (event bus bridge for service worker)
-  chrome.storage.onChanged.addListener((changes, area) => {
+  browser.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
     if (!changes['pinmark-event-bus']) return;
     // BroadcastChannel in content scripts handles this directly;
     // this safeguard forwards events to tabs that lack BroadcastChannel support.
-    chrome.tabs.query({}, tabs => {
+    browser.tabs.query({}).then(tabs => {
       for (const tab of tabs) {
         if (tab.id == null) continue;
-        chrome.tabs.sendMessage(tab.id, changes['pinmark-event-bus'].newValue).catch(() => {
-          // Tab may not have content script — expected for non-matched pages
-        });
+        browser.tabs
+          .sendMessage(tab.id, changes['pinmark-event-bus'].newValue)
+          .catch(() => {
+            // Tab may not have content script — expected for non-matched pages
+          });
       }
     });
   });

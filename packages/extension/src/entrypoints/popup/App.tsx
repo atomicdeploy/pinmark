@@ -48,7 +48,7 @@ export default function PopupApp() {
   }
 
   useEffect(() => {
-    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+    browser.tabs.query({ active: true, currentWindow: true }).then(tabs => {
       const url = tabs[0]?.url ?? '';
       setCurrentUrl(url);
       load(url);
@@ -137,7 +137,7 @@ export default function PopupApp() {
       <div style={{ flex: 1 }} />
 
       <button
-        onClick={() => chrome.runtime.openOptionsPage()}
+        onClick={() => browser.runtime.openOptionsPage()}
         style={{
           background: theme.accent, color: '#fff', border: 'none',
           borderRadius: 8, padding: '10px', cursor: 'pointer',
