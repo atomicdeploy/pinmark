@@ -7,21 +7,15 @@ import { db, upsertLink } from '../../shared/db';
 import { eventBus } from '../../shared/events';
 import { canonicalizeUrl } from '../../shared/url';
 import type { LinkRecord, Tag } from '../../shared/types';
-
-const theme = {
-  bg: '#0f0f14', surface: '#1a1a24',
-  accent: '#7c6af7', text: '#e1e1e8', textMuted: '#888898',
-  border: 'rgba(255,255,255,0.07)',
-  good: '#48c78e', bad: '#ff6363',
-};
-
-const TAG_COLORS: Record<string, string> = {
-  good: '#48c78e', bad: '#ff6363', processed: '#888', ignore: '#555',
-};
+import { useTheme } from '../../shared/theme';
 
 const QUICK_TAGS: Tag[] = ['good', 'bad', 'processed', 'ignore'];
 
 export default function PopupApp() {
+  const theme = useTheme();
+  const TAG_COLORS: Record<string, string> = {
+    good: theme.good, bad: theme.bad, processed: theme.processed, ignore: theme.ignore,
+  };
   const [currentUrl, setCurrentUrl] = useState<string>('');
   const [record, setRecord] = useState<LinkRecord | null>(null);
   const [siteCount, setSiteCount] = useState(0);
@@ -81,7 +75,7 @@ export default function PopupApp() {
   };
 
   return (
-    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14, minHeight: 480 }}>
+    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14, minHeight: 480, background: theme.bg, color: theme.text }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontSize: 20 }}>📌</span>
         <span style={{ fontSize: 16, fontWeight: 800, color: theme.accent }}>Pinmark</span>

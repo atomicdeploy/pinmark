@@ -19,32 +19,14 @@ import { eventBus } from '../../shared/events';
 import type { LinkRecord, Tag, Settings, TagStyle } from '../../shared/types';
 import { DEFAULT_TAG_STYLES } from '../../shared/types';
 import { truncateUrl } from '../../shared/url';
-
-// ─── Theme ───────────────────────────────────────────────────────────────────
-const theme = {
-  bg: '#0f0f14',
-  surface: '#1a1a24',
-  surface2: '#22222e',
-  accent: '#7c6af7',
-  accentHover: '#9b8df9',
-  text: '#e1e1e8',
-  textMuted: '#888898',
-  border: 'rgba(255,255,255,0.07)',
-  good: '#48c78e',
-  bad: '#ff6363',
-  processed: '#888',
-  ignore: '#555',
-};
-
-const TAG_COLORS: Record<string, string> = {
-  good: theme.good,
-  bad: theme.bad,
-  processed: theme.processed,
-  ignore: theme.ignore,
-};
+import { useTheme, useThemeContext, ThemeContext } from '../../shared/theme';
 
 // ─── Shared Components ────────────────────────────────────────────────────────
 function TagPill({ tag, onRemove }: { tag: string; onRemove?: () => void }) {
+  const theme = useThemeContext();
+  const TAG_COLORS: Record<string, string> = {
+    good: theme.good, bad: theme.bad, processed: theme.processed, ignore: theme.ignore,
+  };
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -63,6 +45,7 @@ function TagPill({ tag, onRemove }: { tag: string; onRemove?: () => void }) {
 }
 
 function StatCard({ label, value, color }: { label: string; value: number; color?: string }) {
+  const theme = useThemeContext();
   return (
     <div style={{
       background: theme.surface, borderRadius: 12,
@@ -87,6 +70,10 @@ const NAV_ITEMS: { id: Page; label: string; icon: string }[] = [
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 function Dashboard() {
+  const theme = useThemeContext();
+  const TAG_COLORS: Record<string, string> = {
+    good: theme.good, bad: theme.bad, processed: theme.processed, ignore: theme.ignore,
+  };
   const [stats, setStats] = useState({
     total: 0,
     byTag: {} as Record<string, number>,
@@ -152,6 +139,7 @@ function Dashboard() {
 
 // ─── Links Table ──────────────────────────────────────────────────────────────
 function LinksPage() {
+  const theme = useThemeContext();
   const [links, setLinks] = useState<LinkRecord[]>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -410,6 +398,7 @@ function LinksPage() {
 
 // ─── Import / Export ──────────────────────────────────────────────────────────
 function ImportExportPage() {
+  const theme = useThemeContext();
   const [preview, setPreview] = useState<LinkRecord[] | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -552,6 +541,7 @@ function ImportExportPage() {
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
 function SettingsPage() {
+  const theme = useThemeContext();
   const [settings, setSettings] = useState<Settings>({
     tagStyles: DEFAULT_TAG_STYLES,
     normalizationRules: [],
@@ -698,10 +688,12 @@ function SettingsPage() {
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
+  const theme = useTheme();
   const [page, setPage] = useState<Page>('dashboard');
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: theme.bg }}>
+    <ThemeContext.Provider value={theme}>
+    <div style={{ display: 'flex', height: '100vh', background: theme.bg, color: theme.text }}>
       {/* Sidebar */}
       <div style={{
         width: 200, background: theme.surface, borderRight: `1px solid ${theme.border}`,
@@ -738,5 +730,6 @@ export default function App() {
         {page === 'settings' && <SettingsPage />}
       </div>
     </div>
+    </ThemeContext.Provider>
   );
 }
