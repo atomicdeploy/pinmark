@@ -21,7 +21,7 @@ export class EventBus {
   constructor() {
     this.channel = new BroadcastChannel(CHANNEL_NAME);
     this.channel.onmessage = (e: MessageEvent<BusMessage>) => {
-      this.dispatch(e.data, false);
+      this.dispatch(e.data);
     };
 
     // Also listen on chrome.storage for service-worker contexts
@@ -29,7 +29,7 @@ export class EventBus {
       chrome.storage.onChanged.addListener((changes, area) => {
         if (area === 'local' && changes[STORAGE_KEY]) {
           const msg = changes[STORAGE_KEY].newValue as BusMessage | undefined;
-          if (msg) this.dispatch(msg, false);
+          if (msg) this.dispatch(msg);
         }
       });
     }
@@ -59,7 +59,7 @@ export class EventBus {
     this.listeners.get(type)?.delete(listener as Listener);
   }
 
-  private dispatch(message: BusMessage, _rebroadcast: boolean): void {
+  private dispatch(message: BusMessage): void {
     const handlers = this.listeners.get(message.type);
     if (handlers) {
       for (const handler of handlers) handler(message);

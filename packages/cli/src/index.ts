@@ -40,8 +40,9 @@ const exportCmd = defineCommand({
     const params: unknown[] = [];
 
     if (args.tag) {
+      // Match JSON-encoded tag exactly (e.g. `"good"` inside `["good","processed"]`)
       query += ' AND tags LIKE ?';
-      params.push(`%${args.tag}%`);
+      params.push(`%"${args.tag}"%`);
     }
     if (args.site) {
       query += ' AND siteKey = ?';

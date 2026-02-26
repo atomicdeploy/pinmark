@@ -55,7 +55,8 @@ app.get('/api/links', c => {
   const { tag, site, page = '1', limit = '50' } = c.req.query();
   let query = 'SELECT * FROM links WHERE 1=1';
   const params: unknown[] = [];
-  if (tag) { query += ' AND tags LIKE ?'; params.push(`%${tag}%`); }
+  // Match JSON-encoded tag exactly (e.g. `"good"` inside `["good","processed"]`)
+  if (tag) { query += ' AND tags LIKE ?'; params.push(`%"${tag}"%`); }
   if (site) { query += ' AND siteKey = ?'; params.push(site); }
   query += ` LIMIT ? OFFSET ?`;
   params.push(Number(limit), (Number(page) - 1) * Number(limit));
@@ -129,7 +130,8 @@ app.get('/api/export', c => {
   const { format = 'json', tag, site } = c.req.query();
   let query = 'SELECT * FROM links WHERE 1=1';
   const params: unknown[] = [];
-  if (tag) { query += ' AND tags LIKE ?'; params.push(`%${tag}%`); }
+  // Match JSON-encoded tag exactly (e.g. `"good"` inside `["good","processed"]`)
+  if (tag) { query += ' AND tags LIKE ?'; params.push(`%"${tag}"%`); }
   if (site) { query += ' AND siteKey = ?'; params.push(site); }
   const rows = db.prepare(query).all(...params) as Array<{ canonicalUrl: string; siteKey: string }>;
 
