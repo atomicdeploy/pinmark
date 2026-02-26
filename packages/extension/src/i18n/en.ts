@@ -1,0 +1,21 @@
+/** English UI strings for Pinmark. All user-facing text is here for future localization. */
+export const en = {
+  appName: 'Pinmark',
+  dashboard: 'Dashboard',
+  links: 'Links',
+  importExport: 'Import / Export',
+  settings: 'Settings',
+  totalLinks: 'Total Links',
+  noTags: 'No tags yet',
+  exportJson: 'Export JSON',
+  exportUrls: 'Export URLs',
+  exportTsv: 'Export TSV',
+  importDrop: 'Drag & drop a JSON file here, or click to browse',
+  importButton: 'Import Links',
+  saveSettings: 'Save Settings',
+  addTag: 'Add Tag',
+  openAdminPanel: 'Open Admin Panel →',
+  recentActivity: 'Recent Activity',
+  noLinksYet: 'No links saved yet.',
+  copyUrl: 'Copy URL',
+};

@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.output/
+*.output/
+.wxt/
+coverage/
+*.local
+.env
+*.tsbuildinfo
