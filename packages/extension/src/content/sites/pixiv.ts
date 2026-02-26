@@ -12,8 +12,11 @@ export class PixivAdapter extends BaseSiteAdapter {
   config: SiteConfig = {
     siteKey: 'pixiv',
     hostPatterns: [/pixiv\.net$/i],
+    // Verified against live Pixiv DOM (2024/2025): all artwork grids use
+    // <li> wrappers regardless of page type. Class names are hashed and change
+    // per deploy — only attribute-based selectors are reliable.
     linkSelector: 'a[href*="/artworks/"], a[href*="illust_id="]',
-    containerSelector: '.work, [data-gtm-value], li.image-item',
+    containerSelector: 'li',
     extractId(el: Element): string | null {
       const href = (el as HTMLAnchorElement).href;
       const artworkMatch = href.match(/\/artworks\/(\d+)/);
@@ -41,7 +44,7 @@ export class PixivAdapter extends BaseSiteAdapter {
     },
     extractMetadata(el: Element): Record<string, unknown> {
       const anchor = el.closest('a') ?? (el as HTMLAnchorElement);
-      const img = el.closest('li, [data-gtm-value]')?.querySelector('img');
+      const img = el.closest('li')?.querySelector('img');
       return {
         href: anchor.href,
         artworkId: anchor.href.match(/\/artworks\/(\d+)/)?.[1] ?? null,

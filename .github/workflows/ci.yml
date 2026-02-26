@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    name: Test & Build Extension
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        # --ignore-scripts skips native addon compilation for packages/cli and
+        # packages/backend that depend on better-sqlite3; those packages are not
+        # required for the extension build or tests.
+        run: pnpm install --ignore-scripts
+
+      - name: Type-check extension
+        run: pnpm --filter @pinmark/extension exec tsc --noEmit
+
+      - name: Run unit tests
+        run: pnpm --filter @pinmark/extension test
+
+      - name: Build extension (Chrome MV3)
+        run: pnpm --filter @pinmark/extension build
+
+      - name: Build extension (Firefox MV3)
+        run: pnpm --filter @pinmark/extension exec wxt build --browser firefox
+
+      - name: Upload Chrome build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pinmark-chrome-mv3-${{ github.sha }}
+          path: packages/extension/.output/chrome-mv3/
+          retention-days: 14
+
+      - name: Upload Firefox build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pinmark-firefox-mv3-${{ github.sha }}
+          path: packages/extension/.output/firefox-mv3/
+          retention-days: 14

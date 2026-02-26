@@ -12,8 +12,12 @@ export class PinterestAdapter extends BaseSiteAdapter {
   config: SiteConfig = {
     siteKey: 'pinterest',
     hostPatterns: [/pinterest\.(com|co\.\w+|ca|com\.\w+)$/i],
+    // Verified against live Pinterest DOM (2024/2025): every pin card carries
+    // data-test-id="pin" regardless of board/feed/search context.
+    // data-grid-item is the outer masonry cell; we target the inner pin card
+    // so styles clip correctly to the card boundary.
     linkSelector: 'a[href*="/pin/"]',
-    containerSelector: '[data-test-id="pin"], .PinCard, [data-grid-item]',
+    containerSelector: '[data-test-id="pin"]',
     extractId(el: Element): string | null {
       const href = (el as HTMLAnchorElement).href;
       const m = href.match(/\/pin\/(\d+)/);

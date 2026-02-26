@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --ignore-scripts
+
+      - name: Run unit tests
+        run: pnpm --filter @pinmark/extension test
+
+      - name: Build Chrome MV3
+        run: pnpm --filter @pinmark/extension build
+
+      - name: Build Firefox MV3
+        run: pnpm --filter @pinmark/extension exec wxt build --browser firefox
+
+      - name: Zip Chrome build
+        run: |
+          cd packages/extension/.output
+          zip -r ../../../pinmark-chrome-${{ github.ref_name }}.zip chrome-mv3/
+
+      - name: Zip Firefox build
+        run: |
+          cd packages/extension/.output
+          zip -r ../../../pinmark-firefox-${{ github.ref_name }}.zip firefox-mv3/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Pinmark ${{ github.ref_name }}
+          body: |
+            ## Pinmark ${{ github.ref_name }}
+
+            ### Installation
+
+            **Chrome / Edge (MV3)**
+            1. Download `pinmark-chrome-${{ github.ref_name }}.zip` and unzip it.
+            2. Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, and select the unzipped folder.
+
+            **Firefox (MV3)**
+            1. Download `pinmark-firefox-${{ github.ref_name }}.zip` and unzip it.
+            2. Open `about:debugging#/runtime/this-firefox`, click **Load Temporary Add-on**, and select any file in the unzipped folder.
+          files: |
+            pinmark-chrome-${{ github.ref_name }}.zip
+            pinmark-firefox-${{ github.ref_name }}.zip
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
