@@ -53,6 +53,29 @@ jobs:
       - name: Build extension (Firefox MV3)
         run: pnpm --filter @pinmark/extension exec wxt build --browser firefox
 
+      - name: Install Chromium for E2E tests
+        # Install the full Chromium (not headless-shell) required for extension loading.
+        # --headless=new in Chrome 112+ supports MV3 extensions without GPU/Xvfb.
+        run: npx playwright install chromium
+
+      - name: Run E2E tests (real Pinterest & Pixiv)
+        # puppeteer-core connects to Chromium with --headless=new + --load-extension.
+        # CHROME_PATH is set to the Playwright-managed full Chromium binary.
+        run: |
+          CHROME=$(find "$HOME/.cache/ms-playwright" -name "chrome" -not -path "*headless*" -type f 2>/dev/null | head -1)
+          echo "Using Chrome: $CHROME"
+          CHROME_PATH="$CHROME" pnpm --filter @pinmark/e2e test:ci
+        env:
+          EXT_PATH: ${{ github.workspace }}/packages/extension/.output/chrome-mv3
+
+      - name: Upload E2E screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots-${{ github.sha }}
+          path: packages/e2e/screenshots/
+          retention-days: 14
+
       - name: Upload Chrome build artifact
         uses: actions/upload-artifact@v4
         with:
